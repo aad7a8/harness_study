@@ -10,11 +10,11 @@ def main() -> None:
         "messages": [
             {
                 "role": "user",
-                "content": "你好，請用中文自我介紹。"
+                "content": "給我一版python 地端server llama.cpp 多輪對話的簡易code 只用request套件"
             }
         ],
         "temperature": 0.2,
-        "max_tokens": 512,
+        "max_tokens": 32768,
         "stream": False
     }
 
