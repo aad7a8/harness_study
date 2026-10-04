@@ -13,11 +13,12 @@ dependencies = [
 ]
 
 [project.scripts]
-agent = "agent.s03_bash:main"
+agent = "agent.s03_1_bash:main"
 agent-s00 = "agent.s00_api_call:main"
 agent-s01 = "agent.s01_chat:main"
 agent-s02 = "agent.s02_streaming:main"
 agent-s03 = "agent.s03_bash:main"
+agent-s03-1 = "agent.s03_1_bash:main"
 
 [tool.uv.build-backend]
 module-name = "agent"
