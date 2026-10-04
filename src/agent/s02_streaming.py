@@ -1,11 +1,13 @@
 import requests
 import json
+from prompt_toolkit import PromptSession
+from prompt_toolkit.keys import Keys
+from prompt_toolkit.key_binding import KeyBindings
 
-# ─── 設定 ───────────────────────────────────────────
 BASE_URL = "http://192.168.0.182:8080/v1/chat/completions"
-MODEL    = "local-model"          # llama.cpp 通常填 "local-model" 即可
+MODEL    = "local-model"
 SYSTEM   = "你是一個友善的 AI 助手。"
-# ────────────────────────────────────────────────────
+
 messages = [{"role": "system", "content": SYSTEM}]
 
 def chat(user_input: str) -> str:
@@ -25,10 +27,8 @@ def chat(user_input: str) -> str:
         stream=True,              # ← requests 層也開串流
     )
     resp.raise_for_status()
-    resp.encoding = "utf-8" 
-
-    collected = []                # 累積完整回覆，供 messages 記錄用
-
+    resp.encoding = "utf-8"
+    collected = []
     print("AI: ", end="", flush=True)
 
     for line in resp.iter_lines(decode_unicode=True):
@@ -61,20 +61,28 @@ def chat(user_input: str) -> str:
     return full_reply
 
 
-def get_multiline_input(prompt="你: "):
-    print(prompt, end="")
-    lines = []
-    while True:
-        line = input()
-        if line == "":          # 空行 → 結束
-            break
-        lines.append(line)
-    return "\n".join(lines).strip()
+def get_multiline_input(prompt="user: "):
+    kb = KeyBindings()
+
+    @kb.add(Keys.Enter)
+    def _(event):
+        event.current_buffer.validate_and_handle()
+
+    @kb.add("escape", "enter")
+    def _(event):
+        event.current_buffer.insert_text("\n")
+
+    session = PromptSession(key_bindings=kb)
+    try:
+        text = session.prompt(prompt, multiline=True, mouse_support=True)
+    except KeyboardInterrupt:
+        return ""
+    return text.strip()
 
 
 # ─── 主迴圈 ─────────────────────────────────────────
 if __name__ == "__main__":
-    print("=== llama.cpp 多輪對話 (輸入 'quit' 結束) ===\n")
+    print("  Enter 送出 | Alt+Enter 換行 | Ctrl+C 結束\n")
     while True:
         user = get_multiline_input()
         print(f"sent:{user}")
