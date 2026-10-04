@@ -193,7 +193,7 @@ def get_multiline_input(prompt="user: "):
 
 
 # ─── 主迴圈 ────────────────────────────────────────────
-if __name__ == "__main__":
+def main() -> None:
     print("  Enter 送出 | Alt+Enter 換行 | Ctrl+C 結束\n")
     while True:
         user = get_multiline_input()
@@ -213,3 +213,7 @@ if __name__ == "__main__":
             print("⚠  連不上 server，請確認 llama-server 已啟動")
         except Exception as e:
             print(f"⚠  錯誤: {e}")
+
+
+if __name__ == "__main__":
+    main()

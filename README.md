@@ -17,6 +17,9 @@
 ## 執行
 
 ```bash
-uv run agent                          # 最新階段
-uv run python -m agent.s00_api_call   # 指定階段
+uv run agent                          # 最新階段（目前 = s03）
+uv run agent-s00                      # 指定階段
+uv run agent-s01
+uv run agent-s02
+uv run agent-s03
 ```
