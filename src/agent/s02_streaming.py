@@ -54,7 +54,7 @@ def chat(user_input: str) -> str:
             print(content, end="", flush=True)  # 即時輸出
             collected.append(content)
 
-    print()  # 換行收尾
+    print()
 
     full_reply = "".join(collected)
     messages.append({"role": "assistant", "content": full_reply})
@@ -74,7 +74,7 @@ def get_multiline_input(prompt="user: "):
 
     session = PromptSession(key_bindings=kb)
     try:
-        text = session.prompt(prompt, multiline=True, mouse_support=True)
+        text = session.prompt(prompt, multiline=True, mouse_support=False)
     except KeyboardInterrupt:
         return ""
     return text.strip()
@@ -85,14 +85,18 @@ if __name__ == "__main__":
     print("  Enter 送出 | Alt+Enter 換行 | Ctrl+C 結束\n")
     while True:
         user = get_multiline_input()
-        print(f"sent:{user}")
-        if user.lower() in ("quit", "exit", "q"):
+        if user.lower() in ("/quit", "/exit", "/q"):
             break
+        if user.lower() == "/clear":
+            messages.clear()
+            messages.append({"role": "system", "content": SYSTEM})
+            print("✓ 對話已清空，開始新對話。\n")
+            continue
         if not user:
             continue
         try:
             answer = chat(user)
-            print()  # 回覆與下次輸入之間留一行空白
+            print()
         except requests.exceptions.ConnectionError:
             print("⚠  連不上 server，請確認 llama-server 已啟動")
         except Exception as e:
