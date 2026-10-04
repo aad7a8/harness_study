@@ -1,7 +1,7 @@
 [project]
 name = "harness-study"
 version = "0.1.0"
-description = "Add your description here"
+description = "Chat client for a local OpenAI-compatible LLM server"
 readme = "README.md"
 authors = [
     { name = "aad7a8", email = "aad7a8@gmail.com" }
