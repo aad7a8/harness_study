@@ -2,7 +2,6 @@ import argparse
 import requests
 import json
 import subprocess
-import shlex
 from prompt_toolkit import PromptSession
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.key_binding import KeyBindings
@@ -55,9 +54,15 @@ def run_bash(command: str) -> str:
             text=True,
             timeout=30,
         )
+        def truncate(s: str, limit: int = 5000) -> str:
+            # 截斷避免過長，並明確標註提示
+            if len(s) > limit:
+                return s[:limit] + f"\n…(輸出已截斷，總長度 {len(s)} chars)"
+            return s
+
         output = {
-            "stdout": result.stdout[:4096],   # 截斷避免過長
-            "stderr": result.stderr[:4096],
+            "stdout": truncate(result.stdout),
+            "stderr": truncate(result.stderr),
             "exit_code": result.returncode,
         }
     except subprocess.TimeoutExpired:
@@ -94,6 +99,7 @@ def chat(user_input: str) -> str:
         # 累積本輪的 text 與 tool_calls
         content_parts: list[str] = []
         tool_calls: dict[int, dict] = {}  # index → {id, name, arguments}
+        in_thinking = False  # 是否正在輸出 reasoning（用於標頭與顏色切換）
 
         print("AI: ", end="", flush=True)
 
@@ -110,9 +116,20 @@ def chat(user_input: str) -> str:
 
             delta = chunk.get("choices", [{}])[0].get("delta", {})
 
+            # reasoning（思考過程，部分模型放在 reasoning_content / reasoning）
+            reasoning = delta.get("reasoning_content") or delta.get("reasoning") or ""
+            if reasoning:
+                if not in_thinking:
+                    in_thinking = True
+                    print("\033[90m💭 [思考]\033[0m\n\033[90m", end="", flush=True)
+                print(reasoning, end="", flush=True)
+
             # 一般文字
             text = delta.get("content", "")
             if text:
+                if in_thinking:
+                    in_thinking = False
+                    print("\033[0m\n", end="", flush=True)  # 結束灰色思考區
                 print(text, end="", flush=True)
                 content_parts.append(text)
 
@@ -133,6 +150,8 @@ def chat(user_input: str) -> str:
                 if fn.get("arguments"):
                     tool_calls[idx]["arguments"] += fn["arguments"]
 
+        if in_thinking:
+            print("\033[0m", end="", flush=True)  # 確保結束灰色思考區
         print()  # 換行
         content_text = "".join(content_parts)
 
