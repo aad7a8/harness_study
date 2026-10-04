@@ -1,3 +1,4 @@
+import argparse
 import requests
 import json
 import subprocess
@@ -12,19 +13,22 @@ SYSTEM   = "你是一個友善的 AI 助手。"
 
 messages = [{"role": "system", "content": SYSTEM}]
 
+# -bypass 模式：跳過所有 bash 執行確認（由 main() 依命令列參數設定）
+BYPASS = False
+
 # ─── Tool 定義 ─────────────────────────────────────────
 TOOLS = [
     {
         "type": "function",
         "function": {
             "name": "bash",
-            "description": "在本地電腦上執行 bash 指令，回傳 stdout、stderr 與 exit_code。",
+            "description": "執行 bash 指令，回傳 stdout、stderr 與 exit_code。",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "command": {
                         "type": "string",
-                        "description": "要執行的 bash 指令，例如 'ls -la /tmp'",
+                        "description": "要執行的 bash 指令",
                     }
                 },
                 "required": ["command"],
@@ -36,9 +40,12 @@ TOOLS = [
 # ─── 執行 bash（附安全確認）────────────────────────────
 def run_bash(command: str) -> str:
     print(f"\n🖥  準備執行: {command}")
-    confirm = input("❓  是否執行？(y/n): ").strip().lower()
-    if confirm != "y":
-        return json.dumps({"stdout": "", "stderr": "使用者拒絕執行", "exit_code": -1})
+    if BYPASS:
+        print("\U0001f6eb  [bypass] 已跳過確認，直接執行")
+    else:
+        confirm = input("\u2753  是否執行？(y/n): ").strip().lower()
+        if confirm != "y":
+            return json.dumps({"stdout": "", "stderr": "使用者拒絕執行", "exit_code": -1})
 
     try:
         result = subprocess.run(
@@ -185,16 +192,25 @@ def get_multiline_input(prompt="user: "):
         event.current_buffer.insert_text("\n")
 
     session = PromptSession(key_bindings=kb)
-    try:
-        text = session.prompt(prompt, multiline=True, mouse_support=False)
-    except KeyboardInterrupt:
-        return ""
+    text = session.prompt(prompt, multiline=True, mouse_support=False)
     return text.strip()
 
 
 # ─── 主迴圈 ────────────────────────────────────────────
 def main() -> None:
-    print("  Enter 送出 | Alt+Enter 換行 | Ctrl+C 結束\n")
+    global BYPASS
+    parser = argparse.ArgumentParser(description="s03: 附 bash tool 的 chat agent")
+    parser.add_argument(
+        "-bypass",
+        action="store_true",
+        help="跳過所有 bash 執行確認（危險：指令將直接執行）",
+    )
+    args = parser.parse_args()
+    BYPASS = args.bypass
+
+    if BYPASS:
+        print("\u26a0  [bypass] 模式已開啟：所有 bash 指令將跳過確認直接執行！\n")
+    print("  Enter 送出 | Alt+Enter 換行 | /exit 結束\n")
     while True:
         user = get_multiline_input()
         if user.lower() in ("/quit", "/exit", "/q"):

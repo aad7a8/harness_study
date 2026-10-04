@@ -17,9 +17,8 @@
 ## 執行
 
 ```bash
-uv run agent                          # 最新階段（目前 = s03）
+uv run agent                          # 最新階段（目前 = s04）
 uv run agent-s00                      # 指定階段
-uv run agent-s01
-uv run agent-s02
+...
 uv run agent-s03
 ```
