@@ -1,7 +1,7 @@
 [project]
 name = "harness-study"
 version = "0.1.0"
-description = "Chat client for a local OpenAI-compatible LLM server"
+description = "From a single API call to a self-built agent harness"
 readme = "README.md"
 authors = [
     { name = "aad7a8", email = "aad7a8@gmail.com" }
@@ -12,7 +12,10 @@ dependencies = [
 ]
 
 [project.scripts]
-harness-study = "harness_study:main"
+agent = "agent.s00_api_call:main"
+
+[tool.uv.build-backend]
+module-name = "agent"
 
 [build-system]
 requires = ["uv_build>=0.12.23,<0.13.0"]
