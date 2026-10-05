@@ -33,8 +33,6 @@ READ_LINE_CHARS = 2_000
 
 READ_STATE: dict[str, int] = {}
 
-LAST_READS: dict[tuple[str, int, int], int] = {}
-
 
 def fetch_max_context() -> None:
     global MAX_CONTEXT
@@ -105,7 +103,7 @@ TOOLS = [
     {
         "name": "read_file",
         "description": ("讀取文字檔，回傳帶行號的內容（cat -n 格式）。"
-                        "大檔用 offset/limit 分頁；同區間讀過且檔案沒改過不會重送內容。"
+                        "大檔用 offset/limit 分頁。"
                         "要 edit_file / write_file 覆蓋既有的檔，必須先讀過。"),
         "input_schema": {
             "type": "object",
@@ -114,8 +112,6 @@ TOOLS = [
                 "offset": {"type": "integer", "description": "起始行號（1-based），預設 1"},
                 "limit":  {"type": "integer",
                            "description": f"最多讀取行數，預設 {READ_MAX_LINES}"},
-                "force":  {"type": "boolean",
-                           "description": "即使檔案未變也更強制重送內容"},
             },
             "required": ["path"],
         },
@@ -230,23 +226,16 @@ def _preview(s: str, limit: int = 120) -> str:
     return s if len(s) <= limit else s[:limit] + "…"
 
 
-def run_read_file(path: str, offset: int = 1, limit: int | None = None,
-                  force: bool = False) -> dict:
+def run_read_file(path: str, offset: int = 1, limit: int | None = None) -> dict:
     full_read = limit is None
     limit = limit or READ_MAX_LINES
 
     rng = "全檔" if full_read else f"第 {offset} 行起、最多 {limit} 行"
-    print(f"\n📖  準備讀取: {path}　（{rng}"
-          + ("，強制重送" if force else "") + "）")
+    print(f"\n📖  準備讀取: {path}　（{rng}）")
 
     if not os.path.isfile(path):
         return {"error": f"檔案不存在或不是普通檔案：{path}"}
     st = os.stat(path)
-
-    if not force and LAST_READS.get((path, offset, limit)) == st.st_mtime_ns:
-        return {"ok": True,
-                "content": f"檔案自上次讀取後未變（同 offset/limit），不重送內容；"
-                           f"真需要再看一次請傳 force=true：{path}"}
 
     if full_read and st.st_size > READ_MAX_BYTES:
         return {"error": f"檔案太大（{st.st_size:,} bytes > {READ_MAX_BYTES:,} 上限），"
@@ -258,7 +247,6 @@ def run_read_file(path: str, offset: int = 1, limit: int | None = None,
 
     try:
         with open(path, "r", encoding="utf-8") as f:
-            # 多取一行當觸偵測「還有沒有更多」，不靠全檔行數
             window = list(islice(f, offset - 1, offset - 1 + limit + 1))
     except UnicodeDecodeError:
         return {"error": f"不是 UTF-8 文字檔，無法讀取：{path}"}
@@ -269,7 +257,6 @@ def run_read_file(path: str, offset: int = 1, limit: int | None = None,
     has_more = len(window) > limit
     shown = window[:limit]
 
-    # 預算是行邊界切的：截在半行會讓模型把半截內容抄進 old_string。
     kept, total = [], 0
     for ln in shown:
         cost = min(len(ln), READ_LINE_CHARS) + 8
@@ -290,7 +277,6 @@ def run_read_file(path: str, offset: int = 1, limit: int | None = None,
                           for i, ln in enumerate(shown))
 
     READ_STATE[path] = st.st_mtime_ns
-    LAST_READS[(path, offset, limit)] = st.st_mtime_ns
     return {"ok": True, "content": header + "\n" + numbered}
 
 
@@ -594,10 +580,7 @@ def dispatch_tool(name: str, tool_input: dict) -> dict:
             if limit is not None and (not isinstance(limit, int)
                                       or isinstance(limit, bool) or limit < 1):
                 return {"error": f'read_file 的 "limit" 需為 >= 1 的整數或省略，收到: {limit!r}'}
-            force = tool_input.get("force", False)
-            if not isinstance(force, bool):
-                return {"error": f'read_file 的 "force" 需為布林值，收到: {force!r}'}
-            return run_read_file(path, offset, limit, force)
+            return run_read_file(path, offset, limit)
 
         if name == "write_file":
             path = tool_input.get("path")
@@ -727,6 +710,7 @@ def main() -> None:
             break
         if user.lower() == "/clear":
             messages.clear()
+            READ_STATE.clear()
             print("✓ 對話已清空，開始新對話。\n")
             continue
         if user.lower() == "/context":

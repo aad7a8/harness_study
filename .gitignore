@@ -23,3 +23,6 @@ dist/
 .DS_Store
 
 docs/
+
+# Traces (s04_1)
+traces/
