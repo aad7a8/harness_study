@@ -230,23 +230,28 @@ def chat(user_input: str) -> str:
         tool_results = []
         for tc_id, name, args_str in tool_uses:
             try:
-                args = json.loads(args_str)
-            except json.JSONDecodeError:
-                args = {"command": args_str}
+                try:
+                    args = json.loads(args_str)
+                except json.JSONDecodeError:
+                    args = {"command": args_str}
+                if not isinstance(args, dict):
+                    args = {"command": args_str if isinstance(args_str, str) else str(args)}
 
-            if name == "bash":
-                result = run_bash(args.get("command", ""))
-                print(f"📤  回傳結果長度: {len(result)} chars\n")
-            else:
-                result = json.dumps({"error": f"未知工具: {name}"})
+                if name == "bash":
+                    result = run_bash(args.get("command", ""))
+                    print(f"📤  回傳結果長度: {len(result)} chars\n")
+                else:
+                    result = json.dumps({"error": f"未知工具: {name}"})
+            except Exception as e:
+                result = json.dumps({"stdout": "", "stderr": f"工具執行異常: {e}",
+                                     "exit_code": -1}, ensure_ascii=False)
+            finally:
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": tc_id,
+                    "content": result,
+                })
 
-            tool_results.append({
-                "type": "tool_result",
-                "tool_use_id": tc_id,
-                "content": result,
-            })
-
-        # Anthropic 規定：同輪所有 tool_result 必須放同一則 user 訊息，分開 append 會 400
         messages.append({"role": "user", "content": tool_results})
 
         print(context_status_line() + "\n")
