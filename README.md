@@ -11,6 +11,7 @@
 | s02 | `src/agent/s02_streaming.py` | streaming | s01_chat.py |
 | s03 | `src/agent/s03_bash.py` | bash tool（OpenAI 格式）+ bypass | s02_streaming.py |
 | s03.1 | `src/agent/s03_1_bash.py` | 改用 Anthropic 原生格式 + context 狀態列 | s03_bash.py |
+| s04 | `src/agent/s04_file_tool.py` | 加入 read/write/edit 檔案工具（分頁、讀寫保護） | s03_1_bash.py |
 
 每個階段是獨立可執行的單一檔案，方便對照演進。目前仍在 agent 層，尚未到 harness 層
 （上下文管理、權限、記錄等）。
@@ -18,9 +19,10 @@
 ## 執行
 
 ```bash
-uv run agent                          # 最新階段（目前 = s03.1）
+uv run agent                          # 最新階段（目前 = s04）
 uv run agent-s00                      # 指定階段
 ...
 uv run agent-s03
 uv run agent-s03-1
+uv run agent-s04
 ```
