@@ -26,3 +26,6 @@ docs/
 
 # Traces (s04_1)
 traces/
+
+# s06 快照（回滾用，不進版本控制；agent.permissions.json 則是要 commit 的）
+.agent_snapshots/
