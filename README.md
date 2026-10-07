@@ -3,7 +3,7 @@
 從一個只會呼叫一次 API 的程式開始，逐步疊代成可用的 agent，最後讓它自己寫後續程式碼直到成為harness。
 
 ## 模型 / inference engine
-qwen3.8-flash-next-iq3_s
+qwen3.8-flash-next-iq3_s context:262K
 https://github.com/Niko1221/Strata
 
 ## 階段
